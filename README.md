@@ -42,6 +42,70 @@ to minimise use of tricks like lazy imports to avoid cyclic import errors
 - This would give a completely 'shallow' class in the class interface, with all methods falling
   through to the base class in a standalone module.
 
+### :bulb::bulb::bulb: Idea 3: store the type references in a type table as the class variable access point
+
+- All methods use the same approach to access the type references, and it's more explicit what is happening when an
+  object refers to an attribute that shares the name of a class (`self.TYPE_TABLE.A` is clearer than `self.A`)
+- This is shown in `type_table`
+
+#### :bulb: Version 4: make the type table a Pydantic model for easy setup via `__class_vars__`
+
+- To minimise the amount of manual setup required to use this pattern (so it scales nicely), set up
+  the class variables by a helper method that assigns names from the `interface.py` module namespace.
+- This is shown in `type_table_record`
+- **Open question**: how can this type table be made immutable at `setup()` time so that runtime types
+  cannot be modified?
+  - We can't use Pydantic's `validate_assignment` here because class variables are not model fields.
+  - There is a breakpoint left in the `__main__.py` to highlight this mutability.
+
+#### :bulb: Version 5: use a mixin as a single point of configuration
+
+- This is my final preference for its brevity and single point of configuration of the `TYPE_TABLE`
+  class variable on the classes recorded in the table, using multiple inheritance (a.k.a. mixins).
+- With this modification we end up with a system that requires 0 extra lines per class, only the
+  inheritance of the `RecordedType` mixin in the classdef line.
+- This is shown in `type_table_record_mixin`
+
+In its final form then we have `type_table_record_mixin/interface.py`:
+
+```py
+from __future__ import annotations
+
+from typing import ClassVar, Type
+
+from pydantic import BaseModel
+
+from .a import A_Base
+from .b import B_Base
+
+__all__ = ["TYPE_TABLE", "A", "B"]
+
+
+class TYPE_TABLE(BaseModel):
+    A: ClassVar[Type[A]]
+    B: ClassVar[Type[B]]
+
+    @classmethod
+    def setup(cls) -> None:
+        for classvar in cls.__class_vars__:
+            setattr(cls, classvar, globals()[classvar])
+
+
+class RecordedType:
+    TYPE_TABLE: ClassVar[Type[TYPE_TABLE]] = TYPE_TABLE
+
+
+class A(RecordedType, A_Base):
+    ...
+
+
+class B(RecordedType, B_Base):
+    ...
+
+
+TYPE_TABLE.setup()
+```
+
 ## Demo
 
 ### Problem
@@ -81,3 +145,17 @@ b.bar()='bar'
 a.check(b)=True
 b.check(a)=True
 ```
+
+### Solution 3) use a type table
+
+Running `python -m type_table` gives the same output as above, but using a type table.
+
+### Solution 4) use a Pydantic data model of types for type table setup assistance
+
+Running `python -m type_table_record` is equivalent to the above, but will breakpoint to demonstrate
+the mutability of the type table record values.
+
+### Solution 5) use a Pydantic data model of types for type table setup assistance as a mixin
+
+Running `python -m type_table_record_mixin` is equivalent to the above, but uses a mixin to abstract
+away the assignment of the `TYPE_TABLE` classvar.
