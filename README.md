@@ -30,6 +30,16 @@ to minimise use of tricks like lazy imports to avoid cyclic import errors
   - This is the principle that sites of use should be configurable,
     but not themselves be sites of configuration definition
 
+## Extension
+
+- The only thing holding methods back from being extracted from the minimal interface is that method
+  bodies may reference other classes in the namespace
+- To relieve these jams we can put the types in class variables: i.e. put the namespace types in the
+  data model! They're accessed as data at runtime so they must indeed be considered part of the data model.
+  - This is demonstrated in the further example `extension` package in this repo
+- The only way to make this work that I can think of is to assign the types to the data models
+  they're needed in after the type has been created. Forward references won't work here.
+
 ## Demo
 
 Running `python -m demo` gives a traceback due to cyclic import

@@ -2,5 +2,5 @@ __all__ = ["B_Base"]
 
 
 class B_Base:
-    def bar():
+    def bar(self):
         return "bar"
