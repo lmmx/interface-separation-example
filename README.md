@@ -3,7 +3,7 @@
 Design demo: letting module structure be led by the coupling of classes in a "class interface",
 to minimise use of tricks like lazy imports to avoid cyclic import errors
 
-## Observation
+## :mag: Observation: cyclic import dependencies between classes create 'traffic jams' in code interfaces
 
 - Sometimes classes are interconnected (e.g. one is used in the other's method)
 - When this occurs bidirectionally it is awkward, 'hacky' and sometimes impossible to separate them
@@ -16,7 +16,7 @@ to minimise use of tricks like lazy imports to avoid cyclic import errors
 - All references to the residents of that module equate their location with their interface
   (use/address distinction collapses for both the package's writers and its users)
 
-## Idea
+## :bulb: Idea 1: extract methods without cyclic dependencies into a base class
 
 - Identify the minimal interface that can be retained without breaking the cyclic dependency
 - Expose this 'class interface' as the class structure (guaranteed import cycle-free),
@@ -30,7 +30,7 @@ to minimise use of tricks like lazy imports to avoid cyclic import errors
   - This is the principle that sites of use should be configurable,
     but not themselves be sites of configuration definition
 
-## Extension
+## :bulb::bulb: Idea 2: extract all methods into a base class by storing type references as class variables
 
 - The only thing holding methods back from being extracted from the minimal interface is that method
   bodies may reference other classes in the namespace
@@ -39,8 +39,12 @@ to minimise use of tricks like lazy imports to avoid cyclic import errors
   - This is demonstrated in the further example `extension` package in this repo
 - The only way to make this work that I can think of is to assign the types to the data models
   they're needed in after the type has been created. Forward references won't work here.
+- This would give a completely 'shallow' class in the class interface, with all methods falling
+  through to the base class in a standalone module.
 
 ## Demo
+
+### Problem
 
 Running `python -m demo` gives a traceback due to cyclic import
 
@@ -58,7 +62,22 @@ ImportError: cannot import name 'A' from partially initialized module 'demo.a' (
 circular import) (.../interface-separation-demo/demo/a.py)
 ```
 
-Running `python -m solution` gives no output (it works fine)
+### Solution 1) extract unconnected methods
+
+Running `python -m solution` gives no output (i.e. it works fine: the code executes without circular
+import error).
 
 ```sh
+```
+
+### Solution 2) extract all methods by putting types on the data model
+
+Running `python -m extension` gives output from methods `foo` and `bar` demonstrating that the classes run successfully,
+and output from `check` methods on A and B demonstrating runtime access of B within A and vice versa.
+
+```sh
+a.foo()='foo'
+b.bar()='bar'
+a.check(b)=True
+b.check(a)=True
 ```
