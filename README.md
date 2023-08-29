@@ -78,7 +78,7 @@ from pydantic import BaseModel
 from .a import A_Base
 from .b import B_Base
 
-__all__ = ["TYPE_TABLE", "A", "B"]
+__all__ = ["TYPE_TABLE", "TabulatedType", "A", "B"]
 
 
 class TYPE_TABLE(BaseModel):
@@ -91,15 +91,15 @@ class TYPE_TABLE(BaseModel):
             setattr(cls, classvar, globals()[classvar])
 
 
-class RecordedType:
+class TabulatedType:
     TYPE_TABLE: ClassVar[Type[TYPE_TABLE]] = TYPE_TABLE
 
 
-class A(RecordedType, A_Base):
+class A(TabulatedType, A_Base):
     ...
 
 
-class B(RecordedType, B_Base):
+class B(TabulatedType, B_Base):
     ...
 
 
